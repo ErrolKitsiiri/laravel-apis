@@ -1,0 +1,40 @@
+# Base image
+FROM php:8.2-fpm
+
+# Arguments creating a user in our docker not the root
+ARG user
+ARG uid
+
+# dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip
+
+#clean up the package manager
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# install php extensions --pdo mysql extensions for connecting to db
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# install composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# add the user created you passed to ww data group
+RUN useradd -u $uid -ms /bin/bash -g www-data $user
+
+# copying the files to www
+COPY . /var/www
+
+#changing ownership of the files
+COPY --chown=$user:www-data . /var/www
+
+USER $user
+
+EXPOSE 9000
+
+CMD ["php-fpm"]
