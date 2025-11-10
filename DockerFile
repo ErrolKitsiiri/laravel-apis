@@ -28,13 +28,27 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN useradd -u $uid -ms /bin/bash -g www-data $user
 
 # copying the files to www
-COPY . /var/www
-
-#changing ownership of the files
 COPY --chown=$user:www-data . /var/www
 
-USER $user
+# Set working directory
+WORKDIR /var/www
+
+# Change ownership of /var/www to the user
+RUN chown -R $user:www-data /var/www
 
 EXPOSE 9000
 
-CMD ["php-fpm"]
+# Configure PHP-FPM to listen on all interfaces (0.0.0.0:9000) instead of just localhost
+# This allows nginx in another container to connect to it
+RUN sed -i 's/listen = 127.0.0.1:9000/listen = 0.0.0.0:9000/' /usr/local/etc/php-fpm.d/www.conf || \
+    sed -i 's/listen = .*/listen = 0.0.0.0:9000/' /usr/local/etc/php-fpm.d/www.conf || \
+    echo "listen = 0.0.0.0:9000" >> /usr/local/etc/php-fpm.d/www.conf
+
+# Ensure PHP-FPM runs as www-data (default, but making it explicit)
+RUN sed -i 's/;listen.owner = www-data/listen.owner = www-data/' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/;listen.group = www-data/listen.group = www-data/' /usr/local/etc/php-fpm.d/www.conf
+
+# PHP-FPM needs to run as root initially to bind to port 9000, then it will drop privileges
+# The php-fpm image already handles this correctly, so we just need to ensure it listens on 0.0.0.0
+
+CMD ["php-fpm", "-F"]

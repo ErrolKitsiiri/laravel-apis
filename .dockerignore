@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+.fleet
+.phpactor.json
+.phpunit.result.cache
+.phpunit.cache
+
+# Environment
+.env
+.env.backup
+.env.production
+.env.local
+
+# Dependencies (will be installed in Docker)
+node_modules
+vendor
+public/build
+public/hot
+
+# Storage
+storage/*.key
+storage/pail
+storage/logs/*.log
+
+# Cache
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+DOCKER_SETUP_GUIDE.md
+
+# Documentation
+README.md
+*.md
+
+# Tests
+tests
+phpunit.xml
+

@@ -4,16 +4,16 @@ services:
   # php service container
   laravel_apis_app:
     build:
+      context: ./
+      dockerfile: Dockerfile
       args:
         user: laravel_apis_user
         uid: 1000
-      context: ./
-      dockerfile: DockerFile
     image: laravel_apis_app_image
     container_name: laravel_apis_app
     restart: unless-stopped  #or always
-    # depends_on:
-    #   - laravel_apis_app_mysql
+    depends_on:
+      - laravel_apis_app_mysql
     working_dir: /var/www
     volumes:
       - ./:/var/www
@@ -27,9 +27,56 @@ services:
     restart: unless-stopped
     ports: 
       - "6162:80" #6162 outside the container, port 80 inside the container
+    depends_on:
+      - laravel_apis_app
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx/:/etc/nginx/conf.d
     networks:
       - laravel_apis_app_network
-
+  #mysql service
+  laravel_apis_app_mysql:
+    image: mysql:latest
+    container_name: laravel_apis_mysql_container
+    restart: unless-stopped
+    ports:
+      - "3337:3306"
+    volumes:
+      - laravel_apis_app_mysql_data:/var/lib/mysql
+    environment:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_apis_db
+          MYSQL_USER: laravel_apis_user
+          MYSQL_PASSWORD: password
+    networks:
+      - laravel_apis_app_network
+  laravel_apis_app_phpmyadmin:
+    image: phpmyadmin:5.2.1-apache
+    container_name: laravel_apis_phpmyadmin_container
+    restart: unless-stopped
+    ports:
+      - "8383:80"
+    volumes:
+      - laravel_apis_app_mysql_data:/var/lib/mysql
+    environment:
+          PMA_HOST: laravel_apis_app_mysql
+          PMA_PORT: 3306
+          PMA_USER: root
+          PMA_PASSWORD: password
+    depends_on:
+      - laravel_apis_app_mysql
+    networks:
+      - laravel_apis_app_network
+  laravel_apis_app_redis:
+    image: redis:7.2-alpine
+    container_name: laravel_apis_redis_container
+    ports:
+      - "7379:6379"
+    networks:
+      - laravel_apis_app_network
+volumes:
+  laravel_apis_app_mysql_data:
+    driver: local
 networks: 
   laravel_apis_app_network:
     driver: bridge
